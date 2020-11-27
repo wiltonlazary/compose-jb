@@ -36,4 +36,7 @@ compose.desktop {
             }
         }
     }
+    application {
+        mainClass = "org.jetbrains.codeviewer.UpdateMainKt"
+    }
 }
