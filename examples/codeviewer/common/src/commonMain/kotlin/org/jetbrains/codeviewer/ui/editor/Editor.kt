@@ -4,6 +4,7 @@ import androidx.compose.runtime.State
 import androidx.compose.runtime.mutableStateOf
 import kotlinx.coroutines.CoroutineScope
 import org.jetbrains.codeviewer.platform.File
+import org.jetbrains.codeviewer.util.CommandFlow
 import org.jetbrains.codeviewer.util.EmptyTextLines
 import org.jetbrains.codeviewer.util.SingleSelection
 
@@ -16,6 +17,10 @@ class Editor(
 
     val isActive: Boolean
         get() = selection.selected === this
+
+    val scrollToLine = CommandFlow<Int>()
+
+    fun scrollTo(line: Int) = scrollToLine.emit(line)
 
     fun activate() {
         selection.selected = this

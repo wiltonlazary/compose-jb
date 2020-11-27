@@ -7,10 +7,7 @@ import androidx.compose.material.AmbientContentColor
 import androidx.compose.material.CircularProgressIndicator
 import androidx.compose.material.Surface
 import androidx.compose.material.Text
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.key
-import androidx.compose.runtime.remember
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.drawOpacity
@@ -21,6 +18,7 @@ import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.annotatedString
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
+import kotlinx.coroutines.flow.collect
 import org.jetbrains.codeviewer.platform.SelectionContainer
 import org.jetbrains.codeviewer.platform.VerticalScrollbar
 import org.jetbrains.codeviewer.ui.common.AppTheme
@@ -43,7 +41,7 @@ fun EditorView(model: Editor, settings: Settings) = key(model) {
 
                 if (lines != null) {
                     Box {
-                        Lines(lines!!, settings)
+                        Lines(model, lines!!, settings)
                         Box(
                             Modifier
                                 .offset(
@@ -67,7 +65,7 @@ fun EditorView(model: Editor, settings: Settings) = key(model) {
 }
 
 @Composable
-private fun Lines(lines: Editor.Lines, settings: Settings) = with(AmbientDensity.current) {
+private fun Lines(editor: Editor, lines: Editor.Lines, settings: Settings) = with(AmbientDensity.current) {
     val maxNum = remember(lines.lineNumberDigitCount) {
         (1..lines.lineNumberDigitCount).joinToString(separator = "") { "9" }
     }
@@ -75,6 +73,12 @@ private fun Lines(lines: Editor.Lines, settings: Settings) = with(AmbientDensity
     Box(Modifier.fillMaxSize()) {
         val scrollState = rememberLazyListState()
         val lineHeight = settings.fontSize.toDp() * 1.6f
+
+        LaunchedEffect(Unit) {
+            editor.scrollToLine.collect {
+                scrollState.snapToItemIndex(it, 0)
+            }
+        }
 
         LazyColumnFor(
             lines.size,
