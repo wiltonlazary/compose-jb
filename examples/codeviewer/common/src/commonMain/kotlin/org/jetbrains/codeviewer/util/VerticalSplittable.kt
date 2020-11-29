@@ -50,7 +50,6 @@ fun VerticalSplittable(
 })
 
 class SplitterState {
-    var isResizing by mutableStateOf(false)
     var isResizeEnabled by mutableStateOf(true)
 }
 
@@ -68,9 +67,7 @@ fun VerticalSplitter(
                 if (splitterState.isResizeEnabled) {
                     this.draggable(
                         Orientation.Horizontal,
-                        startDragImmediately = true,
-                        onDragStarted = { splitterState.isResizing = true },
-                        onDragStopped = { splitterState.isResizing = false }
+                        startDragImmediately = true
                     ) {
                         onResize(it.toDp())
                     }

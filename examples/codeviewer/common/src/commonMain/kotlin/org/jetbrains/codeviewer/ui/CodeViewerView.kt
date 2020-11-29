@@ -14,6 +14,9 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.drawLayer
+import androidx.compose.ui.layout.onSizeChanged
+import androidx.compose.ui.platform.AmbientDensity
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import org.jetbrains.codeviewer.ui.editor.EditorEmptyView
 import org.jetbrains.codeviewer.ui.editor.EditorTabsView
@@ -28,21 +31,38 @@ import org.jetbrains.codeviewer.util.VerticalSplittable
 fun CodeViewerView(model: CodeViewer) {
     val panelState = remember { PanelState() }
 
-    val animatedSize = if (panelState.splitter.isResizing) {
-        if (panelState.isExpanded) panelState.expandedSize else panelState.collapsedSize
-    } else {
+    val animatedSize = if (panelState.isAnimating) {
         animate(
             if (panelState.isExpanded) panelState.expandedSize else panelState.collapsedSize,
-            SpringSpec(stiffness = StiffnessLow)
+            SpringSpec(stiffness = StiffnessLow),
+            endListener = {
+                panelState.isAnimating = false
+            }
         )
+    } else {
+        if (panelState.isExpanded) panelState.expandedSize else panelState.collapsedSize
     }
 
+    val density = AmbientDensity.current
+    var widthPx: Int by mutableStateOf(0)
+    val width by derivedStateOf {
+        with(density) { widthPx.toDp() }
+    }
+
+    fun Dp.coercePanelSize() = this
+        .coerceAtLeast(panelState.expandedSizeMin)
+        .coerceAtMost(width - panelState.expandedSizeMin)
+
     VerticalSplittable(
-        Modifier.fillMaxSize(),
+        Modifier
+            .fillMaxSize()
+            .onSizeChanged {
+                widthPx = it.width
+                panelState.expandedSize = panelState.expandedSize.coercePanelSize()
+            },
         panelState.splitter,
         onResize = {
-            panelState.expandedSize =
-                (panelState.expandedSize + it).coerceAtLeast(panelState.expandedSizeMin)
+            panelState.expandedSize = (panelState.expandedSize + it).coercePanelSize()
         }
     ) {
         ResizablePanel(Modifier.width(animatedSize).fillMaxHeight(), panelState) {
@@ -73,6 +93,7 @@ private class PanelState {
     var expandedSize by mutableStateOf(300.dp)
     val expandedSizeMin = 90.dp
     var isExpanded by mutableStateOf(true)
+    var isAnimating by mutableStateOf(false)
     val splitter = SplitterState()
 }
 
@@ -96,6 +117,7 @@ private fun ResizablePanel(
                 .padding(top = 4.dp)
                 .width(24.dp)
                 .clickable {
+                    state.isAnimating = true
                     state.isExpanded = !state.isExpanded
                 }
                 .padding(4.dp)
