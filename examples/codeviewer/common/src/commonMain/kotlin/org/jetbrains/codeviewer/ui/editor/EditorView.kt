@@ -1,6 +1,8 @@
 package org.jetbrains.codeviewer.ui.editor
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material.AmbientContentColor
@@ -14,13 +16,16 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.drawOpacity
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.AmbientDensity
 import androidx.compose.ui.selection.DisableSelection
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.annotatedString
 import androidx.compose.ui.text.withStyle
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import org.jetbrains.codeviewer.platform.HomeFolder
 import org.jetbrains.codeviewer.platform.SelectionContainer
 import org.jetbrains.codeviewer.platform.VerticalScrollbar
 import org.jetbrains.codeviewer.ui.common.AppTheme
@@ -32,7 +37,7 @@ import org.jetbrains.codeviewer.util.withoutWidthConstraints
 import kotlin.text.Regex.Companion.fromLiteral
 
 @Composable
-fun EditorView(model: Editor, settings: Settings) = key(model) {
+fun EditorView(model: Editor, settings: Settings): Unit = key(model) {
     with (AmbientDensity.current) {
         SelectionContainer {
             Surface(
@@ -67,10 +72,19 @@ fun EditorView(model: Editor, settings: Settings) = key(model) {
 }
 
 @Composable
+fun IFrame(width: Dp, height: Dp, color: Color = Color.Red, content: @Composable() () -> Unit) {
+    Box(Modifier.width(width).height(height).border(width = 2.dp, color = color)) {
+        content()
+    }
+}
+
+@Composable
 private fun Lines(lines: Editor.Lines, settings: Settings) = with(AmbientDensity.current) {
     val maxNum = remember(lines.lineNumberDigitCount) {
         (1..lines.lineNumberDigitCount).joinToString(separator = "") { "9" }
     }
+    val modelInner = remember { Editor(HomeFolder.children.single { it.name == "TestInner.kt"}) }
+    val modelOuter = remember { Editor(HomeFolder.children.single { it.name == "TestOuter.kt"}) }
 
     Box(Modifier.fillMaxSize()) {
         val scrollState = rememberLazyListState()
@@ -81,8 +95,22 @@ private fun Lines(lines: Editor.Lines, settings: Settings) = with(AmbientDensity
             modifier = Modifier.fillMaxSize(),
             state = scrollState,
             itemContent = { index ->
-                Box(Modifier.height(lineHeight)) {
-                    Line(Modifier.align(Alignment.CenterStart), maxNum, lines[index], settings)
+                if (lines[index].content.value.value.startsWith("__EDITOR_OUTER__")) {
+                    Row(modifier = Modifier.fillMaxWidth()) {
+                        IFrame(800.dp, 500.dp) {
+                            EditorView(model = modelOuter, settings = Settings())
+                        }
+                    }
+                } else if (lines[index].content.value.value.startsWith("__EDITOR_INNER__")) {
+                    Row(modifier = Modifier.fillMaxWidth()) {
+                        IFrame(600.dp, 300.dp, Color.Cyan) {
+                            EditorView(model = modelInner, settings = Settings())
+                        }
+                    }
+                } else {
+                    Box(Modifier.height(lineHeight)) {
+                        Line(Modifier.align(Alignment.CenterStart), maxNum, lines[index], settings)
+                    }
                 }
             }
         )
