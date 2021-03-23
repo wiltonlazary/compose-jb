@@ -1,38 +1,87 @@
-import org.jetbrains.compose.compose
-import org.jetbrains.compose.desktop.application.dsl.TargetFormat
-import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
-
-plugins {
-    // __KOTLIN_COMPOSE_VERSION__
-    kotlin("jvm") version "1.4.31"
-    // __LATEST_COMPOSE_RELEASE_VERSION__
-    id("org.jetbrains.compose") version "0.3.2"
-}
 
 group = "me.user"
 version = "1.0"
 
+plugins {
+    id("org.jetbrains.kotlin.multiplatform") version "1.4.31" apply true
+    id("application")
+}
+
 repositories {
+    mavenLocal()
     jcenter()
     mavenCentral()
     maven { url = uri("https://maven.pkg.jetbrains.space/public/p/compose/dev") }
 }
 
 dependencies {
-    implementation(compose.desktop.currentOs)
+    "kotlinCompilerPluginClasspath"("androidx.compose.compiler:compiler:1.0.0-beta02")
 }
 
-tasks.withType<KotlinCompile>() {
-    kotlinOptions.jvmTarget = "11"
+
+tasks.withType<org.jetbrains.kotlin.gradle.dsl.KotlinJsCompile> {
+    kotlinOptions {
+        freeCompilerArgs += listOf(
+            "-Xopt-in=kotlin.RequiresOptIn",
+            "-P", "plugin:androidx.compose.compiler.plugins.kotlin:generateDecoys=true"
+        )
+    }
 }
 
-compose.desktop {
-    application {
-        mainClass = "org.jetbrains.compose.demo.falling.MainKt"
-        nativeDistributions {
-            targetFormats(TargetFormat.Dmg, TargetFormat.Msi, TargetFormat.Deb)
-            packageName = "falling_balls"
-            packageVersion = "1.0.0"
+tasks.withType<org.jetbrains.kotlin.gradle.dsl.KotlinJvmCompile> {
+    kotlinOptions {
+        jvmTarget = "1.8"
+        useIR = true
+    }
+}
+
+
+kotlin {
+    jvm {
+        withJava()
+        application {
+            mainClass.value( "org.jetbrains.compose.demo.falling.MainKt" )
+        }
+
+    }
+
+    js(IR) {
+        browser {
+            webpackTask {
+                cssSupport.enabled = true
+            }
+
+            runTask {
+                cssSupport.enabled = true
+            }
+
+            testTask {
+                useKarma {
+                    useChromeHeadless()
+                    webpackConfig.cssSupport.enabled = true
+                }
+            }
+        }
+        binaries.executable()
+    }
+
+    sourceSets {
+        val commonMain by getting {
+            dependencies {
+                implementation("androidx.compose.runtime:runtime:1.0.0-beta02")
+                implementation("androidx.compose.js:js:1.0.0-beta02")
+            }
+        }
+
+        val jsMain by getting {
+            dependencies {
+            }
+        }
+
+        val jvmMain by getting {
+            dependencies {
+                implementation("androidx.compose.desktop:desktop-jvm-macos-x64:1.0.0-beta02")
+            }
         }
     }
 }
