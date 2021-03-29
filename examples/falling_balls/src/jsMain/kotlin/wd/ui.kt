@@ -1,15 +1,15 @@
 package org.jetbrains.compose.wd.ui
 
-import androidx.compose.js.MppModifier
-import androidx.compose.js.Text
-import androidx.compose.js.attr
 import androidx.compose.js.button
-import androidx.compose.js.classList
-import androidx.compose.js.cssProps
-import androidx.compose.js.div
 import androidx.compose.js.input
 import androidx.compose.js.span
+import androidx.compose.web.MppModifier
+import androidx.compose.web.elements.Text
+import androidx.compose.web.attr
+import androidx.compose.web.cssProps
+import androidx.compose.web.div
 import androidx.compose.runtime.Composable
+import androidx.compose.web.classes
 
 @Composable
 actual fun WebText(text: String, fontSize: Int?) {
@@ -29,17 +29,15 @@ actual fun WebText(text: String, color: MyColor, fontSize: Int?) {
 }
 
 @Composable
-actual fun WebSlider(value: Float, onValueChange: (Float) -> Unit, modifier: MppModifier) {
-    input(
-            modifier = MppModifier
-                            .attr("type", "range")
-                            .attr("min", "0.25")
-                            .attr("max", "12")
-                            .attr("value", value.toString())
-                            .classList("web-slider")
-                            .onChange { newValue -> onValueChange(newValue.toFloat()) }
-        ) {}
-}
+actual fun WebSlider(value: Float, onValueChange: (Float) -> Unit, modifier: MppModifier) = input(
+    modifier = MppModifier
+        .attr("type", "range")
+        .attr("min", "0.25")
+        .attr("max", "12")
+        .attr("value", value.toString())
+        .classes("web-slider")
+        .onChange { newValue -> onValueChange(newValue.toFloat()) }
+) {}
 
 @Composable
 actual fun WebRow(modifier: MppModifier, content:  @Composable () -> Unit) {

@@ -1,4 +1,4 @@
-import androidx.compose.js.renderComposable
+import androidx.compose.web.renderComposable
 import androidx.compose.runtime.remember
 import kotlinx.browser.document
 import kotlinx.browser.window

@@ -1,6 +1,6 @@
 package org.jetbrains.compose.wd.ui
 
-import androidx.compose.js.MppModifier
+import androidx.compose.web.MppModifier
 
 expect fun MppModifier.padding(all: Int): MppModifier
 expect fun MppModifier.offset(x: Int, y: Int): MppModifier

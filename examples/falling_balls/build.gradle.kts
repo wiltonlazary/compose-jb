@@ -68,8 +68,8 @@ kotlin {
     sourceSets {
         val commonMain by getting {
             dependencies {
-                implementation("androidx.compose.runtime:runtime:1.0.0-beta02")
-                implementation("androidx.compose.js:js:1.0.0-beta02")
+                implementation("androidx.compose.runtime:runtime:1.0.0-beta04")
+                implementation("androidx.compose.web:web:1.0.0-beta04")
             }
         }
 

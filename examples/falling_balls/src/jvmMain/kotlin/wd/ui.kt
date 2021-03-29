@@ -4,7 +4,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.js.MppModifier
+import androidx.compose.web.MppModifier
 import androidx.compose.material.Button
 import androidx.compose.material.Slider
 import androidx.compose.material.Text

@@ -1,11 +1,11 @@
 package org.jetbrains.compose.wd.ui
 
-import androidx.compose.js.MppModifier
-import androidx.compose.js.css
-import androidx.compose.js.cssProps
-import androidx.compose.js.events.event
-import androidx.compose.js.events.onClick
-import androidx.compose.js.onresize
+import androidx.compose.web.MppModifier
+import androidx.compose.web.css
+import androidx.compose.web.cssProps
+import androidx.compose.web.events.event
+import androidx.compose.web.events.onClick
+//import androidx.compose.web.onresize
 import kotlinx.browser.window
 import org.w3c.dom.events.Event
 import org.w3c.dom.events.EventListener
@@ -47,11 +47,13 @@ actual fun MppModifier.fillMaxHeight(fraction: Float) = cssProps(mapOf("width" t
 
 actual fun MppModifier.onSizeChanged(sizeChanged: (Size) -> Unit): MppModifier {
     sizeChanged(Size(755, 330))
-    return onresize { width, height ->
-        console.log("ON SIZE??", width, height)
-        //sizeChanged(Size(width, height))
-    }
+    return this
+//    return onresize { width, height ->
+//        console.log("ON SIZE??", width, height)
+//        //sizeChanged(Size(width, height))
+//    }
 }
+
 actual val WithModifier: MppModifier
     get() = JsModifier()
 

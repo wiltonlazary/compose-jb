@@ -1,7 +1,7 @@
 package org.jetbrains.compose.wd.ui
 
 import androidx.compose.runtime.Composable
-import androidx.compose.js.MppModifier
+import androidx.compose.web.MppModifier
 
 @Composable
 fun WebText(text: String) {
