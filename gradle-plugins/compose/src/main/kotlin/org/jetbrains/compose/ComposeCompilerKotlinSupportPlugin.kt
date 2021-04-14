@@ -14,8 +14,7 @@ class ComposeCompilerKotlinSupportPlugin : KotlinCompilerPluginSupportPlugin {
 
     override fun isApplicable(kotlinCompilation: KotlinCompilation<*>): Boolean {
         val targetPlatform = kotlinCompilation.target.platformType
-        return targetPlatform != KotlinPlatformType.js
-                && targetPlatform != KotlinPlatformType.native
+        return targetPlatform != KotlinPlatformType.native
     }
 
     override fun applyToCompilation(kotlinCompilation: KotlinCompilation<*>): Provider<List<SubpluginOption>> =

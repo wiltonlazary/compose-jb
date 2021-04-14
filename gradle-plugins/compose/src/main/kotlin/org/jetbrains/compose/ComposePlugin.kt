@@ -16,10 +16,12 @@ import org.jetbrains.compose.desktop.DesktopExtension
 import org.jetbrains.compose.desktop.application.internal.configureApplicationImpl
 import org.jetbrains.compose.desktop.application.internal.currentTarget
 import org.jetbrains.compose.desktop.preview.internal.initializePreview
+import org.jetbrains.kotlin.gradle.dsl.KotlinJsCompile
 import org.jetbrains.kotlin.gradle.plugin.KotlinDependencyHandler
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 
 internal val composeVersion get() = ComposeBuildConfig.composeVersion
+internal val composeWithWebVersion get() = ComposeBuildConfig.composeWithWebVersion
 
 class ComposePlugin : Plugin<Project> {
     override fun apply(project: Project) {
@@ -102,10 +104,17 @@ class ComposePlugin : Plugin<Project> {
                 useIR = true
             }
         }
+
+        project.tasks.withType(KotlinJsCompile::class.java) {
+            it.kotlinOptions.freeCompilerArgs += listOf(
+                "-P", "plugin:androidx.compose.compiler.plugins.kotlin:generateDecoys=true"
+            )
+        }
     }
 
     object Dependencies {
         val desktop = DesktopDependencies
+        val web = WebDependencies
         val animation get() = composeDependency("org.jetbrains.compose.animation:animation")
         val foundation get() = composeDependency("org.jetbrains.compose.foundation:foundation")
         val material get() = composeDependency("org.jetbrains.compose.material:material")
@@ -140,6 +149,11 @@ class ComposePlugin : Plugin<Project> {
         val currentOs by lazy {
             composeDependency("org.jetbrains.compose.desktop:desktop-jvm-${currentTarget.id}")
         }
+    }
+
+    object WebDependencies {
+        val runtimeWithWeb get() = "org.jetbrains.compose.runtime:runtime:$composeWithWebVersion"
+        val composableDom get() = "org.jetbrains.compose:web:$composeWithWebVersion"
     }
 }
 

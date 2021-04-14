@@ -17,4 +17,7 @@ object BuildProperties {
     fun deployVersion(project: Project): String =
         System.getenv("COMPOSE_GRADLE_PLUGIN_VERSION")
             ?: project.findProperty("deploy.version") as String
+    fun composeWithWebVersion(project: Project): String =
+        System.getenv("COMPOSE_GRADLE_PLUGIN_COMPOSE_WITH_WEB_VERSION")
+            ?: project.findProperty("compose.withWebVersion") as String
 }
