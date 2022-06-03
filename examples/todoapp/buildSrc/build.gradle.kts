@@ -2,8 +2,9 @@ plugins {
     `kotlin-dsl`
 }
 
+initDeps(project)
+
 repositories {
-    // TODO: remove after new build is published
     mavenLocal()
     google()
     mavenCentral()

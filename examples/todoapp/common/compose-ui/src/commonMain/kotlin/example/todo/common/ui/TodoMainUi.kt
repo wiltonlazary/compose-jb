@@ -24,19 +24,20 @@ import androidx.compose.material.icons.filled.Delete
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.key.Key
 import androidx.compose.ui.input.key.onKeyEvent
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import com.arkivanov.decompose.extensions.compose.jetbrains.asState
+import com.arkivanov.decompose.extensions.compose.jetbrains.subscribeAsState
 import example.todo.common.main.TodoItem
 import example.todo.common.main.TodoMain
 
 @Composable
 fun TodoMainContent(component: TodoMain) {
-    val model by component.models.asState()
+    val model by component.models.subscribeAsState()
 
     Column {
         TopAppBar(title = { Text(text = "Todo List") })
@@ -130,6 +131,7 @@ private fun Item(
     }
 }
 
+@OptIn(ExperimentalComposeUiApi::class)
 @Composable
 private fun TodoInput(
     text: String,

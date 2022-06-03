@@ -3,10 +3,16 @@ plugins {
     id("kotlin-multiplatform")
 }
 
+initDeps(project)
+
 kotlin {
     jvm("desktop")
     android()
     ios()
+
+    js(IR) {
+        browser()
+    }
 
     sourceSets {
         named("commonTest") {
@@ -26,9 +32,14 @@ kotlin {
                 implementation(Deps.JetBrains.Kotlin.testJunit)
             }
         }
+        named("jsTest") {
+            dependencies {
+                implementation(Deps.JetBrains.Kotlin.testJs)
+            }
+        }
     }
 
     tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile> {
-        kotlinOptions.jvmTarget = "1.8"
+        kotlinOptions.jvmTarget = "11"
     }
 }

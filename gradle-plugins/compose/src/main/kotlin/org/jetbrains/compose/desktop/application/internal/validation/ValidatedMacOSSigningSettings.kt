@@ -5,6 +5,7 @@
 
 package org.jetbrains.compose.desktop.application.internal.validation
 
+import org.gradle.api.Project
 import org.gradle.api.provider.Provider
 import org.jetbrains.compose.desktop.application.dsl.MacOSSigningSettings
 import org.jetbrains.compose.desktop.application.internal.ComposeProperties
@@ -17,6 +18,7 @@ internal data class ValidatedMacOSSigningSettings(
     val identity: String,
     val keychain: File?,
     val prefix: String,
+    private val appStore: Boolean
 ) {
     val fullDeveloperID: String
         get() {
@@ -25,13 +27,15 @@ internal data class ValidatedMacOSSigningSettings(
             return when {
                 identity.startsWith(developerIdPrefix) -> identity
                 identity.startsWith(thirdPartyMacDeveloperPrefix) -> identity
-                else -> developerIdPrefix + identity
+                else -> (if (!appStore) developerIdPrefix else thirdPartyMacDeveloperPrefix) + identity
             }
         }
 }
 
 internal fun MacOSSigningSettings.validate(
-    bundleIDProvider: Provider<String?>
+    bundleIDProvider: Provider<String?>,
+    project: Project,
+    appStoreProvider: Provider<Boolean?>
 ): ValidatedMacOSSigningSettings {
     check(currentOS == OS.MacOS) { ERR_WRONG_OS }
 
@@ -41,18 +45,23 @@ internal fun MacOSSigningSettings.validate(
         ?: error(ERR_UNKNOWN_PREFIX)
     val signIdentity = this.identity.orNull
         ?: error(ERR_UNKNOWN_SIGN_ID)
-    val keychainFile = this.keychain.orNull?.let { File(it) }
-    if (keychainFile != null) {
-        check(keychainFile.exists()) {
-            "$ERR_PREFIX keychain is not an existing file: ${keychainFile.absolutePath}"
+    val keychainPath = this.keychain.orNull
+    val keychainFile = if (keychainPath != null) {
+        val keychainFile = listOf(project.file(keychainPath), project.rootProject.file(keychainPath))
+            .firstOrNull { it.exists() }
+        check(keychainFile != null) {
+            "$ERR_PREFIX could not find the specified keychain: $keychainPath"
         }
-    }
+        keychainFile
+    } else null
+    val appStore = appStoreProvider.orNull == true
 
     return ValidatedMacOSSigningSettings(
         bundleID = bundleID,
         identity = signIdentity,
         keychain = keychainFile,
-        prefix = signPrefix
+        prefix = signPrefix,
+        appStore = appStore
     )
 }
 

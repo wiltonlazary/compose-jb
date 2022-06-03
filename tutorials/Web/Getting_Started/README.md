@@ -1,9 +1,5 @@
 # Getting Started With Compose for Web
 
-**The API is experimental, and breaking changes can be expected**
-
-## Introduction
-
 In this tutorial, we will create a simple web UI application using the Compose UI framework.
 
 
@@ -16,7 +12,7 @@ You need to have the following software installed before you begin:
 
 ## Creating a new project
 
-If you don't want to create the project manually, you can [download the example here](https://github.com/JetBrains/compose-jb/tree/master/examples/web-getting-started)
+If you don't want to create the project manually, you can [download the template here](https://github.com/JetBrains/compose-jb/tree/master/templates/web-template)
 
 The project wizard doesn't support Compose for web projects yet, so we need to perform the following steps:
 
@@ -25,7 +21,7 @@ The project wizard doesn't support Compose for web projects yet, so we need to p
 - Tick `Kotlin DSL build script`
 - Tick `Kotlin/Multiplatform`
 
-![](create-mpp.png)
+<img alt="" src="create-mpp.png" height="500" />
 
 
 #### 2. Update `settings.gradle.kts`:
@@ -39,17 +35,18 @@ pluginManagement {
 ```
 
 #### 3. Update `build.gradle.kts`:
-```kotlin
+``` kotlin
 // Add compose gradle plugin
 plugins {
-    kotlin("multiplatform") version "1.4.32"
-    id("org.jetbrains.compose") version "0.0.0-web-dev-11"
+    kotlin("multiplatform") version "1.6.10"
+    id("org.jetbrains.compose") version "1.1.0"
 }
 
 // Add maven repositories
 repositories {
     mavenCentral()
     maven("https://maven.pkg.jetbrains.space/public/p/compose/dev")
+    google()
 }
 
 // Enable JS(IR) target and add dependencies
@@ -61,7 +58,7 @@ kotlin {
     sourceSets {
         val jsMain by getting {
             dependencies {
-                implementation(compose.web.web)
+                implementation(compose.web.core)
                 implementation(compose.runtime)
             }
         }
@@ -88,26 +85,34 @@ kotlin {
 </html>
 ```
 
-#### 7. Add the `Main.kt` file:
+#### 7. Add the `Main.kt` file to the `kotlin`:
 ```kotlin
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.setValue
+import androidx.compose.runtime.Composable
+import org.jetbrains.compose.web.attributes.*
+import org.jetbrains.compose.web.css.*
+import org.jetbrains.compose.web.dom.*
+import org.jetbrains.compose.web.renderComposable
+
 fun main() {
     var count: Int by mutableStateOf(0)
 
     renderComposable(rootElementId = "root") {
-        Div(style = { padding(25.px) }) {
+        Div({ style { padding(25.px) } }) {
             Button(attrs = {
-                onClick { count = count - 1 }
+                onClick { count -= 1 }
             }) {
                 Text("-")
             }
 
-            Span(style = { padding(15.px) }) {
-                Text("${count}")
+            Span({ style { padding(15.px) } }) {
+                Text("$count")
             }
 
-
             Button(attrs = {
-                onClick { count = count + 1 }
+                onClick { count += 1 }
             }) {
                 Text("+")
             }
@@ -124,10 +129,37 @@ Use the command line to run:
 ./gradlew jsBrowserRun
 ```
 
+Instead of manually compiling and executing a Kotlin/JS project every time you want to see the changes you made, you can use the continuous compilation mode:
+```shell
+./gradlew jsBrowserRun --continuous
+```
+
 Or run it from the IDE:
 
-![](run_project.png)
+<img alt="" src="run_project.png" height="500" />
 
 The browser will open `localhost:8080`:
 
-![](run_result.png)
+<img alt="" src="run_result.png" height="500" />
+
+## Common issues when running the project
+
+#### [webpack-cli] Unable to load '@webpack-cli/serve' command
+https://youtrack.jetbrains.com/issue/KT-49124
+```
+[webpack-cli] Unable to load '@webpack-cli/serve' command
+[webpack-cli] TypeError: options.forEach is not a function
+...
+```
+There is a temporary workaround:
+```
+In build.gradle.kts:
+
+// a temporary workaround for a bug in jsRun invocation - see https://youtrack.jetbrains.com/issue/KT-48273
+afterEvaluate {
+    rootProject.extensions.configure<org.jetbrains.kotlin.gradle.targets.js.nodejs.NodeJsRootExtension> {
+        versions.webpackDevServer.version = "4.0.0"
+        versions.webpackCli.version = "4.9.0"
+    }
+}
+```

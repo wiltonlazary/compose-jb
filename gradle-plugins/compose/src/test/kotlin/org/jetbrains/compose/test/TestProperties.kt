@@ -6,9 +6,15 @@
 package org.jetbrains.compose.test
 
 object TestProperties {
-    val composeVersion: String
-        get() = System.getProperty("compose.plugin.version")!!
+    val defaultKotlinVersion: String
+        get() = notNullSystemProperty("kotlin.version")
 
-    val gradleVersionForTests: String
-        get() = System.getProperty("gradle.version.for.tests")!!
+    val composeVersion: String
+        get() = notNullSystemProperty("compose.plugin.version")
+
+    val gradleVersionForTests: String?
+        get() = System.getProperty("gradle.version.for.tests")
+
+    private fun notNullSystemProperty(property: String): String =
+        System.getProperty(property) ?: error("The '$property' system property is not set")
 }

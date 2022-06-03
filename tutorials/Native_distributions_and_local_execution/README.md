@@ -116,7 +116,7 @@ The following formats available for the supported operating systems:
 By default, Apple does not allow users to execute unsigned applications downloaded from the internet.  Users attempting
 to run such applications will be faced with an error like this:
 
-![](attrs-error.png)
+<img alt="" src="attrs-error.png" height="462" />
 
 See [our tutorial](/tutorials/Signing_and_notarization_on_macOS/README.md) 
 on how to sign and notarize your application. 
@@ -130,6 +130,15 @@ You can use the following DSL properties (in order of descending priority):
 * `nativeDistributions.<os>.packageVersion` specifies a version for a single target OS;
 * `nativeDistributions.packageVersion` specifies a version for all packages;
 
+For macOS you can also specify the build version using the following DSL properties (in order of descending priority):
+* `nativeDistributions.macOS.<packageFormat>PackageBuildVersion` specifies a build version for a single package format;
+* `nativeDistributions.macOS.packageBuildVersion` specifies a build version for all macOS packages;
+
+If the build version is not specified, the package version is used.
+See [CFBundleShortVersionString](https://developer.apple.com/documentation/bundleresources/information_property_list/cfbundleshortversionstring) (package version)
+and [CFBundleVersion](https://developer.apple.com/documentation/bundleresources/information_property_list/cfbundleversion) (build version)
+for more information about versions on macOS.
+
 ``` kotlin
 compose.desktop {
     application {
@@ -141,25 +150,32 @@ compose.desktop {
               // a version for all Linux distributables
               packageVersion = "..." 
               // a version only for the deb package
-              debVersion = "..." 
+              debPackageVersion = "..." 
               // a version only for the rpm package
-              rpmVersion = "..." 
+              rpmPackageVersion = "..." 
             }
             macOS {
               // a version for all macOS distributables
               packageVersion = "..."
               // a version only for the dmg package
-              dmgVersion = "..." 
+              dmgPackageVersion = "..." 
               // a version only for the pkg package
-              pkgVersion = "..." 
+              pkgPackageVersion = "..." 
+              
+              // a build version for all macOS distributables
+              packageBuildVersion = "..."
+              // a build version only for the dmg package
+              dmgPackageBuildVersion = "..." 
+              // a build version only for the pkg package
+              pkgPackageBuildVersion = "..." 
             }
             windows {
               // a version for all Windows distributables
               packageVersion = "..."  
               // a version only for the msi package
-              msiVersion = "..."
+              msiPackageVersion = "..."
               // a version only for the exe package
-              exeVersion = "..." 
+              exePackageVersion = "..." 
             }
         }
     }
@@ -240,7 +256,8 @@ The following properties are available in the `nativeDistributions` DSL block:
 * `version` — application's version (default value: Gradle project's [version](https://docs.gradle.org/current/javadoc/org/gradle/api/Project.html#getVersion--));
 * `description` — application's description (default value: none);
 * `copyright` — application's copyright (default value: none);
-* `vendor` — application's vendor (default value: none).
+* `vendor` — application's vendor (default value: none);
+* `licenseFile` — application's license (default value: none).
 
 ``` kotlin
 compose.desktop {
@@ -251,8 +268,64 @@ compose.desktop {
             description = "Compose Example App"
             copyright = "© 2020 My Name. All rights reserved."
             vendor = "Example vendor"
+            licenseFile.set(project.file("LICENSE.txt"))
         }
     }
+}
+```
+
+## Packaging resources
+
+There are multiple ways to package and load resources with Compose for Desktop.
+
+### JVM resource loading
+
+Since Compose for Desktop uses JVM platform, you can load resources from a jar file using `java.lang.Class` API. Put a file under `src/main/resources`, 
+then access it using [Class::getResource](https://docs.oracle.com/en/java/javase/15/docs/api/java.base/java/lang/Class.html#getResource(java.lang.String))
+or [Class::getResourceAsStream](https://docs.oracle.com/en/java/javase/15/docs/api/java.base/java/lang/Class.html#getResourceAsStream(java.lang.String)).
+
+### Adding files to packaged application
+
+In some cases putting and reading resources from jar files might be inconvenient.
+Or you may want to include a target specific asset (e.g. a file, that is included only 
+into a macOS package, but not into a Windows one).
+
+Compose Gradle plugin can be configured to put additional
+resource files under an installation directory.
+
+To do so, specify a root resource directory via DSL:
+```
+compose.desktop {
+    application {
+        mainClass = "MainKt"
+        nativeDistributions {
+            targetFormats(TargetFormat.Dmg, TargetFormat.Msi, TargetFormat.Deb)
+            packageVersion = "1.0.0"
+
+            appResourcesRootDir.set(project.layout.projectDirectory.dir("resources"))
+        }
+    }
+}
+```
+In the example above a root resource directory is set to `<PROJECT_DIR>/resources`.
+
+Compose Gradle plugin will include all files under the following subdirectories:
+1. Files from `<RESOURCES_ROOT_DIR>/common` will be included into all packages.
+2. Files from `<RESOURCES_ROOT_DIR>/<OS_NAME>` will be included only into packages for 
+a specific OS. Possible values for `<OS_NAME>` are: `windows`, `macos`, `linux`.
+3. Files from `<RESOURCES_ROOT_DIR>/<OS_NAME>-<ARCH_NAME>` will be included only into packages for
+   a specific combination of OS and CPU architecture. Possible values for `<ARCH_NAME>` are: `x64` and `arm64`.
+For example, files from `<RESOURCES_ROOT_DIR>/macos-arm64` will be included only into packages built for Apple Silicon
+Macs.
+
+Included resources can be accessed via `compose.application.resources.dir` system property:
+```
+import java.io.File
+
+val resourcesDir = File(System.getProperty("compose.application.resources.dir"))
+
+fun main() {
+    println(resourcesDir.resolve("resource.txt").readText())
 }
 ```
 
@@ -363,13 +436,34 @@ The following platform-specific options are available
     * `packageName` — a name of the application;
     * `dockName` — a name of the application displayed in the menu bar, the "About <App>" menu item, in the dock, etc. 
       Equals to `packageName` by default.
-    * `signing` and `notarization` — see
+    * `signing`, `notarization`, `provisioningProfile`, and `runtimeProvisioningProfile` — see
       [the corresponding tutorial](/tutorials/Signing_and_notarization_on_macOS/README.md) 
       for details;
+    * `appStore = true` — build and sign for the Apple App Store. Requires at least JDK 17;
+    * `appCategory` — category of the app for the Apple App Store. 
+      Default value is `utilities` when building for the App Store, `Unknown` otherwise. 
+      See [LSApplicationCategoryType](https://developer.apple.com/documentation/bundleresources/information_property_list/lsapplicationcategorytype) for a list of valid categories;
+    * `entitlementsFile.set(File("PATH_TO_ENTITLEMENTS"))` — a path to file containing entitlements to use when signing.
+      When a custom file is provided, make sure to add the entitlements that are required for Java apps.
+      See [sandbox.plist](https://github.com/openjdk/jdk/blob/master/src/jdk.jpackage/macosx/classes/jdk/jpackage/internal/resources/sandbox.plist) for the default file that is used when building for the App Store. It can be different depending on your JDK version.
+      If no file is provided the default entitlements provided by jpackage are used.
+      See [the corresponding tutorial](/tutorials/Signing_and_notarization_on_macOS/README.md#configuring-entitlements)
+    * `runtimeEntitlementsFile.set(File("PATH_TO_RUNTIME_ENTITLEMENTS"))` — a path to file containing entitlements to use when signing the JVM runtime.
+      When a custom file is provided, make sure to add the entitlements that are required for Java apps.
+      See [sandbox.plist](https://github.com/openjdk/jdk/blob/master/src/jdk.jpackage/macosx/classes/jdk/jpackage/internal/resources/sandbox.plist) for the default file that is used when building for the App Store. It can be different depending on your JDK version.
+      If no file is provided then `entitlementsFile` is used. If that was also not provided, the default entitlements provided by jpackage are used.
+      See [the corresponding tutorial](/tutorials/Signing_and_notarization_on_macOS/README.md#configuring-entitlements)
     * `dmgPackageVersion = "DMG_VERSION"` — a dmg-specific package version
       (see the section `Specifying package version` for details);
     * `pkgPackageVersion = "PKG_VERSION"` — a pkg-specific package version
       (see the section `Specifying package version` for details);
+    * `packageBuildVersion = "DMG_VERSION"` — a package build version
+      (see the section `Specifying package version` for details);
+    * `dmgPackageBuildVersion = "DMG_VERSION"` — a dmg-specific package build version
+      (see the section `Specifying package version` for details);
+    * `pkgPackageBuildVersion = "PKG_VERSION"` — a pkg-specific package build version
+      (see the section `Specifying package version` for details);
+    * `infoPlist` — see the section `Customizing Info.plist on macOS` for details;
 * Windows:
     * `console = true` adds a console launcher for the application;
     * `dirChooser = true` enables customizing the installation path during installation;
@@ -383,7 +477,7 @@ The following platform-specific options are available
           (see the section `Specifying package version` for details);
     * `exePackageVersion = "EXE_VERSION"` — a pkg-specific package version
     (see the section `Specifying package version` for details);
-    
+
 ## App icon
 
 The app icon needs to be provided in OS-specific formats:
@@ -407,4 +501,135 @@ compose.desktop {
         }
     }
 }
+```
+
+## Customizing Info.plist on macOS
+
+We aim to support important platform-specific customization use-cases via declarative DSL.
+However, the provided DSL is not enough sometimes. If you need to specify `Info.plist`
+values, that are not modeled in the DSL, you can work around by specifying a piece
+of raw XML, that will be appended to the application's `Info.plist`.
+
+### Example: deep linking into macOS apps
+
+1. Specify a custom URL scheme:
+``` kotlin
+// build.gradle.kts
+compose.desktop {
+    application {
+        mainClass = "MainKt"
+        nativeDistributions {
+            targetFormats(TargetFormat.Dmg)
+            packageName = "Deep Linking Example App"
+            macOS {
+                bundleID = "org.jetbrains.compose.examples.deeplinking"
+                infoPlist {
+                    extraKeysRawXml = macExtraPlistKeys
+                }
+            }
+        }
+    }
+}
+
+val macExtraPlistKeys: String
+    get() = """
+      <key>CFBundleURLTypes</key>
+      <array>
+        <dict>
+          <key>CFBundleURLName</key>
+          <string>Example deep link</string>
+          <key>CFBundleURLSchemes</key>
+          <array>
+            <string>compose</string>
+          </array>
+        </dict>
+      </array>
+    """
+"""
+```
+
+2. Use `java.awt.Desktop` to set up a URI handler:
+``` kotlin 
+// src/main/main.kt
+
+import androidx.compose.material.MaterialTheme
+import androidx.compose.material.Text
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.window.singleWindowApplication
+import java.awt.Desktop
+
+fun main() {
+    var text by mutableStateOf("Hello, World!")
+
+    try {
+        Desktop.getDesktop().setOpenURIHandler { event ->
+            text = "Open URI: " + event.uri
+        }
+    } catch (e: UnsupportedOperationException) {
+        println("setOpenURIHandler is unsupported")
+    }
+
+    singleWindowApplication {
+        MaterialTheme {
+            Text(text)
+        }
+    }
+}
+```
+3. Run `./gradlew runDistributable`.
+4. Links like `compose://foo/bar` are now redirected from a browser to your application.
+
+## Obfuscation
+    
+To obfuscate Compose Multiplatform JVM applications the standard approach for JVM applications works.
+With the task `packageUberJarForCurrentOS` one could generate a JAR file which could be later obfuscated using ProGuard or R8.
+
+### ProGuard example
+
+``` kotlin
+// build.gradle.kts
+
+// Add ProGuard to buildscript classpath
+buildscript {
+    repositories {
+        mavenCentral()
+    }
+    dependencies {
+        classpath("com.guardsquare:proguard-gradle:7.2.0")
+    }
+}
+
+// ...
+
+// Define task to obfuscate the JAR and output to <name>.min.jar
+tasks.register<ProGuardTask>("obfuscate") {
+    val packageUberJarForCurrentOS by tasks.getting
+    dependsOn(packageUberJarForCurrentOS)
+    val files = packageUberJarForCurrentOS.outputs.files
+    injars(files)
+    outjars(files.map { file -> File(file.parentFile, "${file.nameWithoutExtension}.min.jar") })
+
+    val library = if (System.getProperty("java.version").startsWith("1.")) "lib/rt.jar" else "jmods"
+    libraryjars("${System.getProperty("java.home")}/$library")
+
+    configuration("proguard-rules.pro")
+}
+```
+
+This ProGuard configuration should get you started:
+
+```
+# proguard-rules.pro
+-dontoptimize
+-dontobfuscate
+
+-dontwarn kotlinx.**
+
+-keepclasseswithmembers public class com.example.MainKt {
+    public static void main(java.lang.String[]);
+}
+-keep class org.jetbrains.skia.** { *; }
+-keep class org.jetbrains.skiko.** { *; }
 ```

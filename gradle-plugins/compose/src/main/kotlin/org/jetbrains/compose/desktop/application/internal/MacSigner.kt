@@ -7,6 +7,7 @@ package org.jetbrains.compose.desktop.application.internal
 
 import org.jetbrains.compose.desktop.application.internal.validation.ValidatedMacOSSigningSettings
 import java.io.File
+import java.nio.file.Files
 import java.util.regex.Pattern
 
 internal class MacSigner(
@@ -31,7 +32,15 @@ internal class MacSigner(
         )
     }
 
-    fun sign(file: File) {
+    /**
+     * If [entitlements] file is provided, executables are signed with entitlements.
+     * Set [forceEntitlements] to `true` to sign all types of files with the provided [entitlements].
+     */
+    fun sign(
+        file: File,
+        entitlements: File? = null,
+        forceEntitlements: Boolean = false
+    ) {
         val args = arrayListOf(
             "-vvvv",
             "--timestamp",
@@ -46,9 +55,26 @@ internal class MacSigner(
             args.add(it.absolutePath)
         }
 
+        if (forceEntitlements || Files.isExecutable(file.toPath())) {
+            entitlements?.let {
+                args.add("--entitlements")
+                args.add(it.absolutePath)
+            }
+        }
+
         args.add(file.absolutePath)
 
         runExternalTool(MacUtils.codesign, args)
+    }
+
+    fun unsign(file: File) {
+        val args = listOf(
+            "-vvvv",
+            "--remove-signature",
+            file.absolutePath
+        )
+        runExternalTool(MacUtils.codesign, args)
+
     }
 
     private fun findCertificate(certificates: String): String {

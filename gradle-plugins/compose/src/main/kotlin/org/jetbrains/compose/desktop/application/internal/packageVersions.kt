@@ -7,21 +7,22 @@ package org.jetbrains.compose.desktop.application.internal
 
 import org.gradle.api.Project
 import org.gradle.api.provider.Provider
-import org.jetbrains.compose.desktop.application.dsl.Application
-import org.jetbrains.compose.desktop.application.dsl.NativeDistributions
+import org.jetbrains.compose.desktop.application.dsl.JvmApplication
+import org.jetbrains.compose.desktop.application.dsl.JvmApplicationDistributions
 import org.jetbrains.compose.desktop.application.dsl.TargetFormat
 
 internal fun packageVersionFor(
     project: Project,
-    app: Application,
+    app: JvmApplication,
     targetFormat: TargetFormat
 ): Provider<String?> =
     project.provider {
         app.nativeDistributions.packageVersionFor(targetFormat)
             ?: project.version.toString().takeIf { it != "unspecified" }
+            ?: "1.0.0"
     }
 
-private fun NativeDistributions.packageVersionFor(
+private fun JvmApplicationDistributions.packageVersionFor(
     targetFormat: TargetFormat
 ): String? {
     val formatSpecificVersion: String? = when (targetFormat) {
@@ -41,4 +42,32 @@ private fun NativeDistributions.packageVersionFor(
     return formatSpecificVersion
         ?: osSpecificVersion
         ?: packageVersion
+}
+
+internal fun packageBuildVersionFor(
+    project: Project,
+    app: JvmApplication,
+    targetFormat: TargetFormat
+): Provider<String?> =
+    project.provider {
+        app.nativeDistributions.packageBuildVersionFor(targetFormat)
+            // fallback to normal version
+            ?: app.nativeDistributions.packageVersionFor(targetFormat)
+            ?: project.version.toString().takeIf { it != "unspecified" }
+            ?: "1.0.0"
+    }
+
+private fun JvmApplicationDistributions.packageBuildVersionFor(
+    targetFormat: TargetFormat
+): String? {
+    check(targetFormat.targetOS == OS.MacOS)
+    val formatSpecificVersion: String? = when (targetFormat) {
+        TargetFormat.AppImage -> null
+        TargetFormat.Dmg -> macOS.dmgPackageBuildVersion
+        TargetFormat.Pkg -> macOS.pkgPackageBuildVersion
+        else -> error("invalid target format: $targetFormat")
+    }
+    val osSpecificVersion: String? = macOS.packageBuildVersion
+    return formatSpecificVersion
+        ?: osSpecificVersion
 }

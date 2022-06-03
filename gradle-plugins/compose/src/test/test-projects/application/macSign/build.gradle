@@ -5,14 +5,6 @@ plugins {
     id "org.jetbrains.compose"
 }
 
-repositories {
-    google()
-    mavenCentral()
-    maven {
-        url "https://maven.pkg.jetbrains.space/public/p/compose/dev"
-    }
-}
-
 dependencies {
     implementation "org.jetbrains.kotlin:kotlin-stdlib"
     implementation compose.desktop.currentOs
@@ -29,7 +21,7 @@ compose.desktop {
                 signing {
                     sign.set(true)
                     identity.set("Compose Test")
-                    keychain.set(project.file("compose.test.keychain").absolutePath)
+                    keychain.set("compose.test.keychain")
                 }
             }
         }

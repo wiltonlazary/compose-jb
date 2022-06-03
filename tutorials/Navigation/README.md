@@ -159,7 +159,7 @@ The second point may be especially useful in Desktop. When a child is pushed to 
 
 The third point is about instances retaining, like AndroidX `ViewModels`, and is mostly used in Android. It allows to retain (keep in memory) some data when Android configuration change occurs and the whole navigation stack is recreated. The most important advantage of instance retaining in this pattern is that it is encapsulated in children as implementation details.
 
-The forth point is not that obvious but might be very important. Separating navigation and business logic from the user interface may improve testability. E.g. it becomes possible to test non-UI code in integration with just plain JUnit tests. And the UI can be tested in isolation as well using another testing frameworks.
+The fourth point is not that obvious but might be very important. Separating navigation and business logic from the user interface may improve testability. E.g. it becomes possible to test non-UI code in integration with just plain JUnit tests. And the UI can be tested in isolation as well using another testing frameworks.
 
 You can find some integration tests in the TodoApp example:
 
@@ -285,25 +285,25 @@ fun RootUi(root: Root) {
 }
 ```
 
-Application and Root initialisation:
+Application and Root initialization:
 
 ``` kotlin
 import androidx.compose.desktop.DesktopTheme
-import androidx.compose.desktop.Window
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material.MaterialTheme
 import androidx.compose.material.Surface
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.window.singleWindowApplication
 import com.arkivanov.decompose.extensions.compose.jetbrains.rememberRootComponent
 
-fun main() {
-    Window("Navigation tutorial") {
-        Surface(modifier = Modifier.fillMaxSize()) {
-            MaterialTheme {
-                DesktopTheme {
-                    RootUi(root()) // Render the Root and its children
-                }
+fun main() = singleWindowApplication(
+    title = "Navigation tutorial"
+) {
+    Surface(modifier = Modifier.fillMaxSize()) {
+        MaterialTheme {
+            DesktopTheme {
+                RootUi(root()) // Render the Root and its children
             }
         }
     }

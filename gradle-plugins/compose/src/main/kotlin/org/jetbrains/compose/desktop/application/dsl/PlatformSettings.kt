@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2021 JetBrains s.r.o. and respective authors and developers.
+ * Copyright 2020-2022 JetBrains s.r.o. and respective authors and developers.
  * Use of this source code is governed by the Apache 2.0 license that can be found in the LICENSE.txt file.
  */
 
@@ -10,18 +10,23 @@ import org.gradle.api.file.RegularFileProperty
 import org.gradle.api.model.ObjectFactory
 import javax.inject.Inject
 
-abstract class PlatformSettings (objects: ObjectFactory) {
+abstract class AbstractPlatformSettings {
+    @get:Inject
+    internal abstract val objects: ObjectFactory
+
     val iconFile: RegularFileProperty = objects.fileProperty()
     var packageVersion: String? = null
     var installationPath: String? = null
 }
 
-open class MacOSPlatformSettings @Inject constructor(objects: ObjectFactory): PlatformSettings(objects) {
+abstract class AbstractMacOSPlatformSettings : AbstractPlatformSettings() {
     var packageName: String? = null
-    var dockName: String? = null
-    var setDockNameSameAsPackageName: Boolean = true
+
+    var packageBuildVersion: String? = null
     var dmgPackageVersion: String? = null
-    var pkgPackageVersion: String? = null
+    var dmgPackageBuildVersion: String? = null
+    var appCategory: String? = null
+
 
     /**
      * An application's unique identifier across Apple's ecosystem.
@@ -43,7 +48,33 @@ open class MacOSPlatformSettings @Inject constructor(objects: ObjectFactory): Pl
     }
 }
 
-open class LinuxPlatformSettings @Inject constructor(objects: ObjectFactory): PlatformSettings(objects) {
+abstract class NativeApplicationMacOSPlatformSettings : AbstractMacOSPlatformSettings() {
+
+}
+
+abstract class JvmMacOSPlatformSettings : AbstractMacOSPlatformSettings() {
+    var dockName: String? = null
+    var setDockNameSameAsPackageName: Boolean = true
+    var appStore: Boolean = false
+    var entitlementsFile: RegularFileProperty = objects.fileProperty()
+    var runtimeEntitlementsFile: RegularFileProperty = objects.fileProperty()
+    var pkgPackageVersion: String? = null
+    var pkgPackageBuildVersion: String? = null
+
+    val provisioningProfile: RegularFileProperty = objects.fileProperty()
+    val runtimeProvisioningProfile: RegularFileProperty = objects.fileProperty()
+
+    internal val infoPlistSettings = InfoPlistSettings()
+    fun infoPlist(fn: Action<InfoPlistSettings>) {
+        fn.execute(infoPlistSettings)
+    }
+}
+
+open class InfoPlistSettings {
+    var extraKeysRawXml: String? = null
+}
+
+abstract class LinuxPlatformSettings : AbstractPlatformSettings() {
     var shortcut: Boolean = false
     var packageName: String? = null
     var appRelease: String? = null
@@ -55,7 +86,7 @@ open class LinuxPlatformSettings @Inject constructor(objects: ObjectFactory): Pl
     var rpmPackageVersion: String? = null
 }
 
-open class WindowsPlatformSettings @Inject constructor(objects: ObjectFactory): PlatformSettings(objects) {
+abstract class WindowsPlatformSettings : AbstractPlatformSettings() {
     var console: Boolean = false
     var dirChooser: Boolean = true
     var perUserInstall: Boolean = false

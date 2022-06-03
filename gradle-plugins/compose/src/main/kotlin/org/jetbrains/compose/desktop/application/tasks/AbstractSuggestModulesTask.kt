@@ -17,7 +17,6 @@ import org.jetbrains.compose.desktop.application.internal.*
 import org.jetbrains.compose.desktop.application.internal.ComposeProperties
 import org.jetbrains.compose.desktop.application.internal.normalizedPath
 import org.jetbrains.compose.desktop.tasks.AbstractComposeDesktopTask
-import org.jetbrains.kotlin.konan.file.File
 
 abstract class AbstractSuggestModulesTask : AbstractComposeDesktopTask() {
     @get:Input
@@ -45,15 +44,14 @@ abstract class AbstractSuggestModulesTask : AbstractComposeDesktopTask() {
     fun run() {
         val jtool = jvmToolFile("jdeps", javaHome = javaHome)
 
-        fileOperations.delete(workingDir)
-        fileOperations.mkdir(workingDir)
+        cleanDirs(workingDir)
         val args = arrayListOf<String>().apply {
             add("--print-module-deps")
             add("--ignore-missing-deps")
             add("--multi-release")
             add(jvmTarget.get())
             add("--class-path")
-            add(files.joinToString(File.pathSeparator) { it.normalizedPath() })
+            add(files.joinToString(java.io.File.pathSeparator) { it.normalizedPath() })
             add(launcherMainJar.ioFile.normalizedPath())
         }
 

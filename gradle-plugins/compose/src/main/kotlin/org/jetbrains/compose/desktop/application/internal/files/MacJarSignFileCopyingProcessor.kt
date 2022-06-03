@@ -15,6 +15,7 @@ import java.util.zip.ZipOutputStream
 internal class MacJarSignFileCopyingProcessor(
     private val signer: MacSigner,
     private val tempDir: File,
+    private val jvmRuntimeVersion: Int
 ) : FileCopyingProcessor {
     override fun copy(source: File, target: File) {
         if (source.isJarFile) {
@@ -22,7 +23,31 @@ internal class MacJarSignFileCopyingProcessor(
         } else {
             SimpleFileCopyingProcessor.copy(source, target)
             if (source.name.isDylibPath) {
-                signer.sign(target)
+                when {
+                    jvmRuntimeVersion < 17 -> signer.sign(target)
+                    /**
+                     * JDK 17 started to sign non-jar dylibs,
+                     * but it fails, when libs are already signed,
+                     * so we need to remove signature before running jpackage.
+                     *
+                     * JDK 18 processes signed libraries fine, so we don't have to do anything.
+                     *
+                     * Note that the JDK only signs dylib files and not jnilib files,
+                     * so jnilib files still need to be signed here.
+                     */
+                    jvmRuntimeVersion == 17 -> {
+                        if (source.name.endsWith(".jnilib")) {
+                            signer.sign(target)
+                        } else {
+                            signer.unsign(target)
+                        }
+                    }
+                    else -> {
+                        if (source.name.endsWith(".jnilib")) {
+                            signer.sign(target)
+                        }
+                    }
+                }
             }
         }
     }
@@ -61,5 +86,5 @@ internal class MacJarSignFileCopyingProcessor(
     }
 }
 
-private val String.isDylibPath
-    get() = endsWith(".dylib")
+internal val String.isDylibPath
+    get() = endsWith(".dylib") || endsWith(".jnilib")

@@ -1,7 +1,5 @@
 # Style DSL in Compose Web
-**The API is experimental, and breaking changes can be expected**
 
-## Introduction
 In this tutorial we have a look at how to style the components using the Style DSL. It’s a typesafe DSL for style sheets, which you can use to express CSS rules in your Kotlin code, and even modify styles based on the state of your Compose application.
 
 
@@ -9,16 +7,16 @@ In this tutorial we have a look at how to style the components using the Style D
 
 You can declare inline styles via the `style` block of a component
 
-```kotlin
-Div(
-    style = {
+``` kotlin
+Div({
+    style {
         display(DisplayStyle.Flex)
         padding(20.px)
         
         // custom property (or not supported out of a box)
-        property("font-family", value("Arial, Helvetica, sans-serif"))
+        property("font-family", "Arial, Helvetica, sans-serif")
     }
-) { /* content goes here */ }
+}) { /* content goes here */ }
 ```
 
 In HTML, it will look like this:
@@ -31,14 +29,14 @@ In HTML, it will look like this:
 ### Stylesheet
 An alternative way is to define a Stylesheet that contains rules:
 
-```kotlin
+``` kotlin
 object AppStylesheet : StyleSheet() {
     val container by style { // container is a class
         display(DisplayStyle.Flex)
         padding(20.px)
 
         // custom property (or not supported out of a box)
-        property("font-family", value("Arial, Helvetica, sans-serif"))
+        property("font-family", "Arial, Helvetica, sans-serif")
     }
 }
 
@@ -72,11 +70,11 @@ In HTML, it will look like this:
 
 The Style DSL also provides a way to combine and unify selectors:
 
-```kotlin
+``` kotlin
 object AppStylesheet : StyleSheet() {
     
     init {
-        // CSSSelector.Universal can be used instead of "*"
+        // `universal` can be used instead of "*": `universal style {}`
         "*" style { 
             fontSize(15.px)
             padding(0.px)
@@ -84,7 +82,7 @@ object AppStylesheet : StyleSheet() {
         
         // raw selector
         "h1, h2, h3, h4, h5, h6" style {
-            property("font-family", value("Arial, Helvetica, sans-serif"))
+            property("font-family", "Arial, Helvetica, sans-serif")
             
         }
 
@@ -99,13 +97,13 @@ object AppStylesheet : StyleSheet() {
     }
     
     // A convenient way to create a class selector
-    // AppStylesheet.container can be used a class name in components
+    // AppStylesheet.container can be used as a class in component attrs
     val container by style {
-        color("red")
+        color(Color.red)
         
         // hover selector for a class
         self + hover() style { // self is a selector for `container`
-            color("green")
+            color(Color.green)
         }
     }
 }
@@ -116,7 +114,7 @@ object AppStylesheet : StyleSheet() {
 
 To specify media queries, you can use the `media` function, which takes the related query, and a block of styles:
 
-```kotlin
+``` kotlin
 object AppStylesheet : StyleSheet() {
     val container by style {
         padding(48.px)
@@ -134,10 +132,10 @@ object AppStylesheet : StyleSheet() {
 
 The style DSL also provides support for CSS variables.
 
-```kotlin
-object MyVariables : CSSVariables {
+``` kotlin
+object MyVariables {
     // declare a variable
-    val contentBackgroundColor by variable<Color>() 
+    val contentBackgroundColor by variable<CSSColorValue>()
 }
 
 object MyStyleSheet: StyleSheet() {
@@ -156,6 +154,80 @@ object MyStyleSheet: StyleSheet() {
         // default value can be provided as well
         // default value is used when the value is not previously set
         backgroundColor(MyVariables.contentBackgroundColor.value(Color("#333")))
+    }
+}
+```
+
+
+### Runnable example
+
+```kotlin
+import androidx.compose.runtime.Composable
+import org.jetbrains.compose.web.css.*
+import org.jetbrains.compose.web.dom.*
+import org.jetbrains.compose.web.renderComposable
+
+object MyVariables {
+    // declare a variable
+    val contentBackgroundColor by variable<CSSColorValue>()
+}
+
+object MyStyleSheet: StyleSheet() {
+
+    val container by style {
+        //set variable's value for the `container` scope
+        MyVariables.contentBackgroundColor(Color("blue"))
+    }
+
+    val content by style {
+        // get the value
+        backgroundColor(MyVariables.contentBackgroundColor.value())
+    }
+
+    val contentWithDefaultBgColor by style {
+        // default value can be provided as well
+        // default value is used when the value is not previously set
+        backgroundColor(MyVariables.contentBackgroundColor.value(Color("#333")))
+    }
+}
+
+object AppStylesheet : StyleSheet() {
+    val container by style { // container is a class
+        display(DisplayStyle.Flex)
+        padding(20.px)
+
+        // custom property (or not supported out of a box)
+        property("font-family", "Arial, Helvetica, sans-serif")
+    }
+}
+
+@Composable
+fun Container(content: @Composable () -> Unit) {
+    Div(
+        attrs = { classes(AppStylesheet.container) }
+    ) {
+        content()
+    }
+}
+
+fun main() {
+    renderComposable(rootElementId = "root") {
+        Div({
+            style {
+                display(DisplayStyle.Flex)
+                padding(20.px)
+
+                // custom property (or not supported out of a box)
+                property("font-family", "Arial, Helvetica, sans-serif")
+            }
+        }) { /* content goes here */ }
+
+
+        Style(AppStylesheet)
+
+        Container {
+            Text("Content")
+        }
     }
 }
 ```

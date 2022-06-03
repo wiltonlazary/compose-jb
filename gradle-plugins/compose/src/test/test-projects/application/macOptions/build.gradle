@@ -5,18 +5,23 @@ plugins {
     id "org.jetbrains.compose"
 }
 
-repositories {
-    google()
-    mavenCentral()
-    maven {
-        url "https://maven.pkg.jetbrains.space/public/p/compose/dev"
-    }
-}
-
 dependencies {
     implementation "org.jetbrains.kotlin:kotlin-stdlib"
     implementation compose.desktop.currentOs
 }
+
+def extraInfoPlistKeys = """
+  <key>CFBundleURLTypes</key>
+  <array>
+    <dict>
+      <key>CFBundleURLName</key>
+      <string>Exameple URL</string>
+      <key>CFBundleURLSchemes</key>
+      <array>
+        <string>exampleUrl</string>
+      </array>
+    </dict>
+  </array>"""
 
 compose.desktop {
     application {
@@ -25,6 +30,9 @@ compose.desktop {
             packageName = "TestPackage"
             macOS {
                 dockName = "CustomDockName"
+                infoPlist {
+                    extraKeysRawXml = extraInfoPlistKeys
+                }
             }
         }
     }

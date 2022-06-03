@@ -13,7 +13,9 @@ import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assumptions
 import org.junit.jupiter.api.Test
 import java.io.File
+import java.util.*
 import java.util.jar.JarFile
+import kotlin.collections.HashSet
 
 class DesktopApplicationTest : GradlePluginTestBase() {
     @Test
@@ -117,7 +119,7 @@ class DesktopApplicationTest : GradlePluginTestBase() {
                 assertEquals("MainKt", mainClass, "Unexpected main class")
 
                 jar.entries().toList().mapTo(HashSet()) { it.name }.apply {
-                    checkContains("MainKt.class", "org/jetbrains/skiko/SkiaWindow.class")
+                    checkContains("MainKt.class", "org/jetbrains/skiko/SkiaLayer.class")
                 }
             }
         }
@@ -143,6 +145,12 @@ class DesktopApplicationTest : GradlePluginTestBase() {
 
     @Test
     fun testMacOptions() {
+        fun String.normalized(): String =
+            trim().replace(
+                "Copyright (C) ${Calendar.getInstance().get(Calendar.YEAR)}",
+                "Copyright (C) CURRENT_YEAR"
+            )
+
         Assumptions.assumeTrue(currentOS == OS.MacOS)
 
         with(testProject(TestProjects.macOptions)) {
@@ -150,8 +158,11 @@ class DesktopApplicationTest : GradlePluginTestBase() {
                 check.taskOutcome(":runDistributable", TaskOutcome.SUCCESS)
                 check.logContains("Hello, from Mac OS!")
                 val appDir = testWorkDir.resolve("build/compose/binaries/main/app/TestPackage.app/Contents/")
-                val infoPlist = appDir.resolve("Info.plist").checkExists().checkExists()
-                infoPlist.readText().checkContains("<key>NSSupportsAutomaticGraphicsSwitching</key><true/>")
+                val actualInfoPlist = appDir.resolve("Info.plist").checkExists()
+                val expectedInfoPlist = testWorkDir.resolve("Expected-Info.Plist")
+                val actualInfoPlistNormalized = actualInfoPlist.readText().normalized()
+                val expectedInfoPlistNormalized = expectedInfoPlist.readText().normalized()
+                Assert.assertEquals(actualInfoPlistNormalized, expectedInfoPlistNormalized)
             }
         }
     }
@@ -201,6 +212,11 @@ class DesktopApplicationTest : GradlePluginTestBase() {
                     """.trimMargin().trim()
                     Assert.assertEquals(expectedOutput, actualOutput)
                 }
+
+                gradle(":runDistributable").build().checks { check ->
+                    check.taskOutcome(":runDistributable", TaskOutcome.SUCCESS)
+                    check.logContains("Signed app successfully started!")
+                }
             }
         }
     }
@@ -215,6 +231,44 @@ class DesktopApplicationTest : GradlePluginTestBase() {
                     check.logContains("Arg #1=Value 1!")
                     check.logContains("Arg #2=Value 2!")
                     check.logContains("JVM system property arg=Value 3!")
+                }
+            }
+
+            testRunTask(":runDistributable")
+            testRunTask(":run")
+
+            gradle(":package").build().checks { check ->
+                check.taskOutcome(":package", TaskOutcome.SUCCESS)
+            }
+        }
+    }
+
+    @Test
+    fun testDefaultArgs() {
+        with(testProject(TestProjects.defaultArgs)) {
+            fun testRunTask(runTask: String) {
+                gradle(runTask).build().checks { check ->
+                    check.taskOutcome(runTask, TaskOutcome.SUCCESS)
+                    check.logContains("compose.application.configure.swing.globals=true")
+                }
+            }
+
+            testRunTask(":runDistributable")
+            testRunTask(":run")
+
+            gradle(":package").build().checks { check ->
+                check.taskOutcome(":package", TaskOutcome.SUCCESS)
+            }
+        }
+    }
+
+    @Test
+    fun testDefaultArgsOverride() {
+        with(testProject(TestProjects.defaultArgsOverride)) {
+            fun testRunTask(runTask: String) {
+                gradle(runTask).build().checks { check ->
+                    check.taskOutcome(runTask, TaskOutcome.SUCCESS)
+                    check.logContains("compose.application.configure.swing.globals=false")
                 }
             }
 
@@ -259,6 +313,17 @@ class DesktopApplicationTest : GradlePluginTestBase() {
                     skikoDir.resolve(fileName).checkExists()
                 }
             }
+        }
+    }
+
+    @Test
+    fun resources() = with(testProject(TestProjects.resources)) {
+        gradle(":run").build().checks { check ->
+            check.taskOutcome(":run", TaskOutcome.SUCCESS)
+        }
+
+        gradle(":runDistributable").build().checks { check ->
+            check.taskOutcome(":runDistributable", TaskOutcome.SUCCESS)
         }
     }
 }

@@ -1,24 +1,16 @@
-buildscript {
-    repositories {
-        // TODO: remove after new build is published
-        mavenLocal()
-        google()
-        mavenCentral()
-        maven("https://maven.pkg.jetbrains.space/public/p/compose/dev")
-    }
-
-    dependencies {
-        // __LATEST_COMPOSE_RELEASE_VERSION__
-        classpath("org.jetbrains.compose:compose-gradle-plugin:0.4.0-build182")
-        classpath("com.android.tools.build:gradle:4.0.1")
-        // __KOTLIN_COMPOSE_VERSION__
-        classpath(kotlin("gradle-plugin", version = "1.4.32"))
-    }
+plugins {
+    // this is necessary to avoid the plugins to be loaded multiple times
+    // in each subproject's classloader
+    kotlin("jvm") apply false
+    kotlin("multiplatform") apply false
+    kotlin("android") apply false
+    id("com.android.application") apply false
+    id("com.android.library") apply false
+    id("org.jetbrains.compose") apply false
 }
 
-allprojects {
+subprojects {
     repositories {
-        mavenLocal()
         google()
         mavenCentral()
         maven("https://maven.pkg.jetbrains.space/public/p/compose/dev")

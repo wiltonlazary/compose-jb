@@ -9,14 +9,17 @@ import org.gradle.api.Project
 object BuildProperties {
     const val name = "JetBrains Compose Plugin"
     const val group = "org.jetbrains.compose"
-    const val website = "https://jetbrains.org/compose"
+    const val website = "https://www.jetbrains.com/lp/compose/"
     const val vcs = "https://github.com/JetBrains/compose-jb"
+    const val serializationVersion = "1.2.1"
     fun composeVersion(project: Project): String =
         System.getenv("COMPOSE_GRADLE_PLUGIN_COMPOSE_VERSION")
             ?: project.findProperty("compose.version") as String
     fun deployVersion(project: Project): String =
         System.getenv("COMPOSE_GRADLE_PLUGIN_VERSION")
             ?: project.findProperty("deploy.version") as String
-    fun isComposeWithWeb(project: Project): Boolean =
-        project.findProperty("compose.with.web") == "true"
+    fun experimentalOELPublication(project: Project): Boolean =
+        project.findProperty("oel.publication") == "true"
+    fun oelAndroidXVersion(project: Project): String? =
+        project.findProperty("oel.androidx.version") as String?
 }

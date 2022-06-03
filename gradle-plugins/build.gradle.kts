@@ -1,10 +1,10 @@
 import com.gradle.publish.PluginBundleExtension
 
 plugins {
-    // __KOTLIN_COMPOSE_VERSION__
-    kotlin("jvm") version "1.4.32" apply false
-    id("com.gradle.plugin-publish") version "0.10.1" apply false
-    id("de.fuerstenau.buildconfig") version "1.1.8" apply false
+    val kotlinVersion = "1.5.30"
+    kotlin("jvm") version kotlinVersion apply false
+    kotlin("plugin.serialization") version kotlinVersion apply false
+    id("com.gradle.plugin-publish") version "0.17.0" apply false
 }
 
 subprojects {
@@ -100,6 +100,7 @@ fun Project.configureGradlePlugin(
         vcsUrl = BuildProperties.vcs
         website = BuildProperties.website
         description = publicationConfig.description
+        tags = gradlePluginConfig.pluginPortalTags
     }
 
     // gradle plugin definition (relates to gradlePlugin extension block from java-gradle-plugin)
@@ -113,5 +114,11 @@ fun Project.configureGradlePlugin(
                 version = project.version
             }
         }
+    }
+}
+
+tasks.register("publishToMavenLocal") {
+    for (subproject in subprojects) {
+        dependsOn(subproject.tasks.named("publishToMavenLocal"))
     }
 }

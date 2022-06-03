@@ -1,8 +1,5 @@
 # Building the UI with Compose Web
 
-**The API is experimental, and breaking changes can be expected**
-
-## Introduction
 
 In this tutorial we will look at several examples that use the Composable DOM DSL to describe the user interface for your web application.
 
@@ -10,7 +7,7 @@ In this tutorial we will look at several examples that use the Composable DOM DS
 
 Compose for Web needs an HTML node that will be a root of its composition. Inside this root node, Compose then manages its own DOM tree.
 
-```kotlin
+``` kotlin
 renderComposable(rootElementId = "root") {
     // content goes here
 }
@@ -22,13 +19,13 @@ While the DOM DSL for Compose for Web doesn't provide a Composable for every HTM
 
 Let's have a look at the Composable for a `Div` tag (most other tags have the same signature):
 
-```kotlin
+``` kotlin
 Div(
     attrs = {
         // specify attributes here
-    },
-    style = {
-        // specify inline style here
+        style {
+            // specify inline style here
+        }
     }
 ) {
     // div content goes here
@@ -37,18 +34,16 @@ Div(
 
 For convenience, some tags like `Input`, `A`, `Form`, or `Img` allow you to specify some extra parameters in the signature that are specific to the respective HTML tag. For example, let’s look at the `Input` tag:
 
-```kotlin
+``` kotlin
 Input(
     type = InputType.Text, // All InputTypes supported
-    value = "", // sets the input value
-    attrs = {},
-    style = {}
+    attrs = {}
 )
 ```
 
 We can use the `type` parameter which is provided for our convenience, or can use the `attrs` block to specify the input type:
 
-```kotlin
+``` kotlin
 Input(attrs = { type(InputType.Text) })
 ```
 
@@ -56,15 +51,15 @@ Input(attrs = { type(InputType.Text) })
 
 The `Text` allows you to add text content to an HTML tag. Besides, the text content it represents, it does not have any parameters:
 
-```kotlin
+``` kotlin
 Text("Arbitrary text")
 ```
 
 If you want to apply styles to text, it needs to be wrapped in a container with a style applied, like a `Span` or `P`:
 
-```kotlin
+``` kotlin
 Span(
-    style = { color("red") } // inline style
+    attrs = { style { color(Color.red) } } // inline style
 ) {
     Text("Red text")
 }
@@ -81,7 +76,7 @@ The `attrs` parameter (which we’ve already seen in some of the previous exampl
 
 The most flexible way to define attributes is by using the `attr` function, which allows you to specify the attribute name and its value.
 
-```kotlin
+``` kotlin
 Div(
     attrs = {
         attr(attr = "custom_attr", value = "its_value")
@@ -95,7 +90,7 @@ However, with this approach, Compose for Web is not able to validate that the at
 
 Here are some examples of common attributes that are available for most Composables representing HTML tags:
 
-```kotlin
+``` kotlin
 attrs = {
     id("elementId")
     classes("cl1", "cl2")
@@ -112,7 +107,7 @@ attrs = {
 
 Depending on the element you are working with, you may also have access to some specific attributes – attributes that are only meaningful for this particular tag. For example, the `A` tag provides some specific attributes, that are specific to hyperlinks:
 
-```kotlin
+``` kotlin
 A(
     attrs = {
         href("https://localhost:8080/page2")
@@ -140,7 +135,7 @@ To discover all attributes that are available in your current scope, you can use
 
 You can declare event listeners in the `attrs` block:
 
-```kotlin
+``` kotlin
 Button(
     attrs = { 
         onClick { println("Button clicked") }
@@ -158,17 +153,97 @@ There are ways to set the style for a component:
 
 You can declare inline styles via the `style` block of a component:
 
-```kotlin
-
+``` kotlin
 Div(
-    style = {
-        display(DisplayStyle.Flex)
-        padding(20.px)
-        
-        // custom property
-        property("font-family", value("Arial, Helvetica, sans-serif"))
+    attrs = {
+        style {
+            display(DisplayStyle.Flex)
+            padding(20.px)
+            
+            // custom property
+            property("font-family", "Arial, Helvetica, sans-serif")
+        }
     }
 ) { /* content goes here */ }
 ```
 
 You can find a more detailed overview of the style DSL, as well as additional examples here - [Style DSL](../Style_Dsl/README.md)
+
+### Runnable example
+
+```kotlin
+import androidx.compose.runtime.Composable
+import org.jetbrains.compose.web.attributes.*
+import org.jetbrains.compose.web.css.*
+import org.jetbrains.compose.web.dom.*
+import org.jetbrains.compose.web.renderComposable
+
+fun main() {
+    renderComposable(rootElementId = "root") {
+        Div(
+            attrs = {
+                // specify attributes here
+                style {
+                    // specify inline style here
+                }
+            }
+        ) {
+            Text("A text in <div>")
+        }
+
+        Input(
+            type = InputType.Text, // All InputTypes supported
+            attrs = {}
+        )
+
+        Text("Arbitrary text")
+
+        Span({
+            style { color(Color.red) } // inline style
+        }) {
+            Text("Red text")
+        }
+
+        Div(
+            attrs = {
+                id("elementId")
+                classes("cl1", "cl2")
+                hidden()
+                title("title")
+                draggable(Draggable.Auto)
+                dir(DirType.Auto)
+                lang("en")
+                contentEditable(true)
+
+                // custom attr
+                attr(attr = "custom_attr", value = "its_value")
+            }
+        ) { /* content */ }
+
+        A(
+            attrs = {
+                href("https://localhost:8080/page2")
+                target(ATarget.Blank)
+                hreflang("en")
+                download("https://...")
+            }
+        ) { Text("Link") }
+
+        Button(
+            attrs = {
+                onClick { println("Button clicked") }
+            }
+        ) { Text("Button") }
+
+        Div({
+            style {
+                display(DisplayStyle.Flex)
+                padding(20.px)
+
+                // custom property
+                property("font-family", "Arial, Helvetica, sans-serif")
+            }
+        }) { Text("Text in Div with inline style") }
+    }
+}
+```

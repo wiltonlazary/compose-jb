@@ -1,11 +1,11 @@
-import org.jetbrains.kotlin.gradle.plugin.mpp.KotlinNativeTarget
-
 plugins {
     id("multiplatform-setup")
     id("android-setup")
 }
 
 kotlin {
+    iosWorkaroundSupportArm64Simulator {}
+
     sourceSets {
         named("commonMain") {
             dependencies {
@@ -25,9 +25,5 @@ kotlin {
                 implementation(Deps.Badoo.Reaktive.utils)
             }
         }
-    }
-
-    targets.getByName<KotlinNativeTarget>("iosX64").compilations.forEach {
-        it.kotlinOptions.freeCompilerArgs += arrayOf("-linker-options", "-lsqlite3")
     }
 }
